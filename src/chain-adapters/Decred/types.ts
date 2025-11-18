@@ -1,5 +1,3 @@
-import type * as bitcoin from 'bitcoinjs-lib'
-
 export interface DCRTransaction {
   vout: Array<{
     scriptpubkey: string
@@ -11,14 +9,14 @@ export interface DCRInput {
   txid: string
   vout: number
   value: number
-  scriptPubKey: Buffer
+  scriptPubKey: Buffer // original UTXO scriptPubKey (hex -> Buffer)
 }
 
 export type DCROutput =
-  | {
-      value: number
-    }
   | { address: string; value: number }
+  // coinselect-style change output
+  | { value: number }
+  // raw script output
   | { script: Buffer; value: number }
 
 export type DCRTransactionRequest = {
@@ -36,12 +34,13 @@ export type DCRTransactionRequest = {
       outputs?: never
       from: string
       to: string
-      value: string
+      value: string // DCR amount as string, e.g. "1.23"
     }
 )
 
 export interface DCRUnsignedTransaction {
-  psbt: bitcoin.Psbt
+  // Raw unsigned Decred transaction hex
+  unsignedTxHex: string
   publicKey: string
 }
 

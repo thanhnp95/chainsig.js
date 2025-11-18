@@ -1,53 +1,47 @@
-// There is no types for coinselect
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-expect-error
-
+// @ts-expect-error coinselect has no types
 import coinselect from 'coinselect'
 
 import { DCRRpcAdapter } from '@chain-adapters/Decred/DCRRpcAdapter/DCRRpcAdapter'
-import {
-  type DCRFeeRecommendation,
-  type UTXO,
-} from '@chain-adapters/Decred/DCRRpcAdapter/Mempool/types'
-import type {
-  DCRTransaction,
-  DCRInput,
-  DCROutput,
-} from '@chain-adapters/Decred/types'
+import type { DCRInput, DCROutput, DCRTransaction } from '@chain-adapters/Decred/types'
+
+// ----------------------------------
+// Internal types
+// ----------------------------------
+
+interface UTXO {
+  txid: string
+  vout: number
+  value: number
+  status: {
+    confirmed: boolean
+  }
+}
+
+interface FeeResponse {
+  fastestFee: number
+  halfHourFee: number
+  hourFee: number
+  economyFee: number
+}
 
 export class Mempool extends DCRRpcAdapter {
-  private readonly providerUrl: string
-
-  constructor(providerUrl: string) {
+  constructor(private readonly providerUrl: string) {
     super()
-    this.providerUrl = providerUrl
   }
 
   private async fetchFeeRate(confirmationTarget = 6): Promise<number> {
-    const response = await fetch(`${this.providerUrl}/v1/fees/recommended`)
-    const data = (await response.json()) as DCRFeeRecommendation
+    const res = await fetch(`${this.providerUrl}/v1/fees/recommended`)
+    const fee = (await res.json()) as FeeResponse
 
-    if (confirmationTarget <= 1) {
-      return data.fastestFee
-    } else if (confirmationTarget <= 3) {
-      return data.halfHourFee
-    } else if (confirmationTarget <= 6) {
-      return data.hourFee
-    } else {
-      return data.economyFee
-    }
+    if (confirmationTarget <= 1) return fee.fastestFee
+    if (confirmationTarget <= 3) return fee.halfHourFee
+    if (confirmationTarget <= 6) return fee.hourFee
+    return fee.economyFee
   }
 
   private async fetchUTXOs(address: string): Promise<UTXO[]> {
-    try {
-      const response = await fetch(
-        `${this.providerUrl}/address/${address}/utxo`
-      )
-      return (await response.json()) as UTXO[]
-    } catch (error) {
-      console.error('Failed to fetch UTXOs:', error)
-      return []
-    }
+    const res = await fetch(`${this.providerUrl}/address/${address}/utxo`)
+    return (await res.json()) as UTXO[]
   }
 
   async selectUTXOs(
@@ -58,44 +52,48 @@ export class Mempool extends DCRRpcAdapter {
     const utxos = await this.fetchUTXOs(from)
     const feeRate = await this.fetchFeeRate(confirmationTarget)
 
-    // Add a small amount to the fee rate to ensure the transaction is confirmed
     const ret = coinselect(utxos, targets, Math.ceil(feeRate + 1))
 
     if (!ret.inputs || !ret.outputs) {
-      throw new Error(
-        'Invalid transaction: coinselect failed to find a suitable set of inputs and outputs. This could be due to insufficient funds, or no inputs being available that meet the criteria.'
-      )
+      throw new Error('Insufficient funds or coinselect failure')
     }
 
+    // Convert UTXOs -> DCRInput[]
+    const inputs: DCRInput[] = ret.inputs.map((u: any) => ({
+      txid: u.txid,
+      vout: u.vout,
+      value: u.value,
+      scriptPubKey: Buffer.from('', 'hex'), // filled later by build step
+    }))
+
     return {
-      inputs: ret.inputs,
+      inputs,
       outputs: ret.outputs,
     }
   }
 
   async broadcastTransaction(transactionHex: string): Promise<string> {
-    const response = await fetch(`${this.providerUrl}/tx`, {
+    const res = await fetch(`${this.providerUrl}/tx`, {
       method: 'POST',
       body: transactionHex,
     })
 
-    if (response.ok) {
-      return await response.text()
+    if (!res.ok) {
+      throw new Error(`Failed to broadcast: ${await res.text()}`)
     }
 
-    throw new Error(`Failed to broadcast transaction: ${await response.text()}`)
+    return await res.text()
   }
 
   async getBalance(address: string): Promise<number> {
-    const response = await fetch(`${this.providerUrl}/address/${address}`)
-    const data = (await response.json()) as {
-      chain_stats: { funded_txo_sum: number; spent_txo_sum: number }
-    }
+    const res = await fetch(`${this.providerUrl}/address/${address}`)
+    const data = await res.json()
+
     return data.chain_stats.funded_txo_sum - data.chain_stats.spent_txo_sum
   }
 
   async getTransaction(txid: string): Promise<DCRTransaction> {
-    const response = await fetch(`${this.providerUrl}/tx/${txid}`)
-    return (await response.json()) as DCRTransaction
+    const res = await fetch(`${this.providerUrl}/tx/${txid}`)
+    return (await res.json()) as DCRTransaction
   }
 }

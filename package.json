@@ -63,7 +63,8 @@
     "test:utils": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest -c jest.config.ts __tests__/bitcoin/utils.test.ts",
     "docs:dev": "vocs dev",
     "docs:build": "vocs build",
-    "docs:preview": "vocs preview"
+    "docs:preview": "vocs preview",
+    "test:decred": "vitest run sandbox/decred"
   },
   "keywords": [
     "blockchain",
@@ -135,6 +136,7 @@
     "bitcoinjs-lib": "^6.1.5",
     "bn.js": "^5.2.1",
     "bs58": "^6.0.0",
+    "bs58check": "^4.0.0",
     "chain-registry": "^1.69.72",
     "coinselect": "^3.1.13",
     "cosmjs-types": "^0.9.0",
