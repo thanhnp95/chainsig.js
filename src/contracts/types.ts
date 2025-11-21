@@ -3,6 +3,10 @@ import type {
   BTCNetworkIds,
 } from '@chain-adapters/Bitcoin/types'
 import type {
+  DCRTransactionRequest,
+  DCRNetworkIds,
+} from '@chain-adapters/Decred/types'
+import type {
   CosmosNetworkIds,
   CosmosTransactionRequest,
 } from '@chain-adapters/Cosmos/types'
@@ -51,9 +55,21 @@ export type BTCChainConfigWithProviders = ChainProvider & {
   network: BTCNetworkIds
 }
 
+export type DCRChainConfigWithProviders = ChainProvider & {
+  network: DCRNetworkIds
+}
+
 export interface BitcoinRequest {
   transaction: BTCTransactionRequest
   chainConfig: BTCChainConfigWithProviders
+  nearAuthentication: NearAuthentication
+  fastAuthRelayerUrl?: string
+  derivationPath: string
+}
+
+export interface DecredRequest {
+  transaction: DCRTransactionRequest
+  chainConfig: DCRChainConfigWithProviders
   nearAuthentication: NearAuthentication
   fastAuthRelayerUrl?: string
   derivationPath: string

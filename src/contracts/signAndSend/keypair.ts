@@ -3,11 +3,13 @@ import { createPublicClient, http } from 'viem'
 
 import * as chainAdapters from '@chain-adapters'
 import { BTCRpcAdapters } from '@chain-adapters/Bitcoin/BTCRpcAdapter'
+import { DCRRpcAdapters } from '@chain-adapters/Decred/DCRRpcAdapter'
 import { getNearAccount } from './utils'
 import { ChainSignatureContract } from '@contracts/ChainSignatureContract'
 import {
   type Response,
   type BitcoinRequest,
+  type DecredRequest,
   type CosmosRequest,
   type EVMRequest,
 } from '@contracts/types'
@@ -20,7 +22,7 @@ export const EVMTransaction = async (
     const account = await getNearAccount({
       networkId: req.nearAuthentication.networkId,
       accountId: req.nearAuthentication.accountId,
-      keypair: keyPair,
+      keyPair: keyPair,
     })
 
     const contract = new ChainSignatureContract({
@@ -76,7 +78,7 @@ export const BTCTransaction = async (
     const account = await getNearAccount({
       networkId: req.nearAuthentication.networkId,
       accountId: req.nearAuthentication.accountId,
-      keypair: keyPair,
+      keyPair: keyPair,
     })
 
     const contract = new ChainSignatureContract({
@@ -127,6 +129,65 @@ export const BTCTransaction = async (
   }
 }
 
+export const DCRTransaction = async (
+  req: DecredRequest,
+  keyPair: KeyPair
+): Promise<Response> => {
+  try {
+    const account = await getNearAccount({
+      networkId: req.nearAuthentication.networkId,
+      accountId: req.nearAuthentication.accountId,
+      keyPair: keyPair,
+    })
+
+    const contract = new ChainSignatureContract({
+      networkId: req.nearAuthentication.networkId,
+      contractId: req.chainConfig.contract,
+    })
+
+    const dcr = new chainAdapters.dcr.Decred({
+      dcrRpcAdapter: new DCRRpcAdapters.Mempool(req.chainConfig.providerUrl),
+      contract,
+      network: req.chainConfig.network,
+    })
+
+    const { transaction, hashesToSign } =
+      await dcr.prepareTransactionForSigning(req.transaction)
+
+    const signatures = await Promise.all(
+      hashesToSign.map(
+        async (payload) =>
+          await contract.sign({
+            payloads: [payload],
+            path: req.derivationPath,
+            keyType: 'Ecdsa',
+            signerAccount: {
+              accountId: account.accountId,
+              signAndSendTransactions: async () => [],
+            },
+          })
+      )
+    )
+
+    const txSerialized = dcr.finalizeTransactionSigning({
+      transaction,
+      rsvSignatures: signatures.flat(),
+    })
+
+    const txHash = await dcr.broadcastTx(txSerialized)
+
+    return {
+      transactionHash: txHash.hash,
+      success: true,
+    }
+  } catch (e: unknown) {
+    return {
+      success: false,
+      errorMessage: e instanceof Error ? e.message : String(e),
+    }
+  }
+}
+
 export const CosmosTransaction = async (
   req: CosmosRequest,
   keyPair: KeyPair
@@ -135,7 +196,7 @@ export const CosmosTransaction = async (
     const account = await getNearAccount({
       networkId: req.nearAuthentication.networkId,
       accountId: req.nearAuthentication.accountId,
-      keypair: keyPair,
+      keyPair: keyPair,
     })
 
     const contract = new ChainSignatureContract({

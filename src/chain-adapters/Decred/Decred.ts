@@ -1,4 +1,4 @@
-import { type DCRRpcAdapter } from '@chain-adapters/Decred/DCRRpcAdapter/DCRRpcAdapter'
+import { type DCRRpcAdapter } from '@chain-adapters/Decred/DCRRpcAdapter'
 import type {
   DCRInput,
   DCRNetworkIds,

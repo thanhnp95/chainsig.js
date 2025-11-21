@@ -12,7 +12,8 @@
     "send-apt": "tsx send-apt.ts",
     "send-sui": "tsx send-sui.ts",
     "send-xrp": "tsx send-xrp.ts",
-    "send-all": "tsx send-eth.ts && tsx send-btc.ts && tsx send-sol.ts && tsx send-apt.ts && tsx send-sui.ts && tsx send-xrp.ts"
+    "send-dcr": "tsx send-dcr.ts",
+    "send-all": "tsx send-eth.ts && tsx send-btc.ts && tsx send-sol.ts && tsx send-apt.ts && tsx send-sui.ts && tsx send-xrp.ts && tsx send-dcr.ts"
   },
   "keywords": [],
   "author": "",
@@ -28,7 +29,6 @@
     "@near-wallet-selector/wallet-utils": "^9.0.2",
     "@noble/hashes": "^1.8.0",
     "@solana/web3.js": "^1.98.2",
-    "chainsig.js": "file:../dist",
     "dotenv": "^16.5.0",
     "viem": "^2.30.6"
   },

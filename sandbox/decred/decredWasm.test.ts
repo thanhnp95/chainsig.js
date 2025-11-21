@@ -1,112 +1,150 @@
-// TODO: remove this test
 import fs from "fs"
 import vm from "vm"
 import path from "path"
 import { fileURLToPath } from "url"
 import { describe, it, expect } from "vitest"
-import { initDecredWasm } from "../../src/chain-adapters/Decred/decredWasm"
+
+import { Account } from "@near-js/accounts"
+import { KeyPair } from "@near-js/crypto"
+import { JsonRpcProvider } from "@near-js/providers"
+import { KeyPairSigner } from "@near-js/signers"
+import { contracts, chainAdapters } from "../../src"
 
 // ===============================================
-// Fix __dirname for ESM (Vitest uses ESM)
+// Fix __dirname for ESM
 // ===============================================
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 // ===============================================
-// Load Go WASM runtime (wasm_exec.js)
+// MANUAL CONFIG (YOU MUST FILL THESE IN)
 // ===============================================
-const execPath = path.resolve(
+const ACCOUNT_ID = "youraccount.testnet"
+const PRIVATE_KEY = "ed25519:7Y...."
+const CHAIN_SIGNATURE_CONTRACT_ID = "v1.signer-prod.testnet"
+
+// Example Decred recipient
+const DCR_RECEIVER = "TsoyZxpn16KJPXxhrgxsoL1yzQtp4wReq1T"
+
+// ===============================================
+// Load Go WASM runtime
+// ===============================================
+const wasmExecPath = path.resolve(
   __dirname,
   "../../src/chain-adapters/Decred/wasm/wasm_exec.js"
 )
-const execCode = fs.readFileSync(execPath, "utf8")
-vm.runInThisContext(execCode) // inject Go class into globalThis
+const wasmExecCode = fs.readFileSync(wasmExecPath, "utf8")
+vm.runInThisContext(wasmExecCode) // defines global.Go
 
 // ===============================================
-// TEST
+// BEGIN FULL TEST
 // ===============================================
+describe("Decred Adapter – FULL REAL FLOW (MPC signing)", () => {
+  it("runs full flow: derive → balance → build tx → MPC sign → finalize → broadcast", async () => {
+    // -------------------------------------------
+    // 1) Init NEAR signer
+    // -------------------------------------------
+    const keyPair = KeyPair.fromString(PRIVATE_KEY)
+    const signer = new KeyPairSigner(keyPair)
 
-describe("Decred WASM Sandbox", () => {
-  // -----------------------------------------------------------
-  //                 TEST: deriveAddress
-  // -----------------------------------------------------------
-  it("deriveAddress works", async () => {
-    const wasm = await initDecredWasm()
-
-    // Valid compressed secp256k1 pubkey (33 bytes)
-    const testPubKey =
-      "03b10a600bf4b89f1ff8eaf0cc82222fbf919e6d1877b53699f97a6665d8485cd4"
-
-    const res = await wasm.deriveAddress({
-      pubKeyHex: testPubKey,
-      network: "testnet",
+    const provider = new JsonRpcProvider({
+      url: "https://test.rpc.fastnear.com",
     })
 
-    console.log("Address →", res.address)
+    const nearAccount = new Account(ACCOUNT_ID, provider, signer)
 
-    expect(typeof res.address).toBe("string")
-    expect(res.address.startsWith("Ts")).toBe(true)
-  })
-
-  // -----------------------------------------------------------
-  //                 TEST: buildUnsignedTx
-  // -----------------------------------------------------------
-  it("buildUnsignedTx works", async () => {
-    const wasm = await initDecredWasm()
-
-    // 1) Get a valid testnet address from pubkey
-    const testPubKey =
-      "03b10a600bf4b89f1ff8eaf0cc82222fbf919e6d1877b53699f97a6665d8485cd4"
-
-    const sender = await wasm.deriveAddress({
-      pubKeyHex: testPubKey,
-      network: "testnet",
+    const contract = new contracts.ChainSignatureContract({
+      networkId: "testnet",
+      contractId: CHAIN_SIGNATURE_CONTRACT_ID,
     })
 
-    console.log("Sender address:", sender.address)
-    expect(sender.address.startsWith("Ts")).toBe(true)
+    // -------------------------------------------
+    // 2) Init Decred Adapter
+    // -------------------------------------------
+    const derivationPath = "m/44'/42'/0'/0/0"
 
-    // 2) Get real scriptPubKey for that address (using wasm)
-    const pk = await wasm.getPkScript({
-      address: sender.address,
+    // DCR UTXO + mempool adapter
+    const dcrRpcAdapter = new chainAdapters.dcr.DCRRpcAdapters.Mempool(
+      "https://mempool.space/testnet4/api"
+    )
+
+    const dcr = new chainAdapters.dcr.Decred({
       network: "testnet",
+      contract,
+      dcrRpcAdapter,
     })
 
-    expect(typeof pk.scriptPubKey).toBe("string")
-    expect(pk.scriptPubKey.length).toBeGreaterThan(0)
+    // -------------------------------------------
+    // 3) Derive DCR address
+    // -------------------------------------------
+    const { address, publicKey } = await dcr.deriveAddressAndPublicKey(
+      ACCOUNT_ID,
+      derivationPath
+    )
 
-    // 3) Build sample input
-    const sampleInput = {
-      txid: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-      vout: 0,
-      value: 100000, // atoms
-      scriptPubKey: pk.scriptPubKey,
+    console.log("Derived DCR Address =", address)
+    expect(address.startsWith("T")).toBe(true)
+
+    // -------------------------------------------
+    // 4) Check balance
+    // -------------------------------------------
+    const { balance } = await dcr.getBalance(address)
+    console.log("Balance atoms =", balance.toString())
+
+    expect(typeof balance === "bigint").toBe(true)
+
+    if (balance < 200000n) {
+      console.warn("⚠ WARNING: Not enough testnet DCR to send transaction!")
     }
 
-    // 4) Build sample output
-    const sampleOutput = {
-      address: sender.address,
-      value: 90000,
-    }
+    // -------------------------------------------
+    // 5) Build unsigned transaction
+    // -------------------------------------------
+    const { transaction, hashesToSign } =
+      await dcr.prepareTransactionForSigning({
+        publicKey,
+        from: address,
+        to: DCR_RECEIVER,
+        value: "0.001", // DCR
+      })
 
-    // 5) Build unsigned tx
-    const tx = await wasm.buildUnsignedTx({
-      inputs: [sampleInput],
-      outputs: [sampleOutput],
-      lockTime: 0,
-      expiry: 0,
-      network: "testnet",
+    console.log("Unsigned TX =", transaction.unsignedTxHex)
+    console.log("Hashes To Sign =", hashesToSign)
+
+    expect(hashesToSign.length).toBe(1)
+
+    // -------------------------------------------
+    // 6) MPC Sign via Chain Signatures
+    // -------------------------------------------
+    const signatures = await contract.sign({
+      payloads: hashesToSign,
+      path: derivationPath,
+      keyType: "Ecdsa",
+      signerAccount: nearAccount,
     })
 
-    console.log("Unsigned TX:", tx.unsignedTxHex)
-    console.log("Hashes:", tx.hashesToSign)
+    console.log("MPC Signatures =", signatures)
 
-    // Validate result
-    expect(typeof tx.unsignedTxHex).toBe("string")
-    expect(tx.unsignedTxHex.length).toBeGreaterThan(20)
+    // -------------------------------------------
+    // 7) Finalize (apply signatures)
+    // -------------------------------------------
+    const signedTx = dcr.finalizeTransactionSigning({
+      transaction,
+      rsvSignatures: signatures,
+    })
 
-    expect(Array.isArray(tx.hashesToSign)).toBe(true)
-    expect(tx.hashesToSign.length).toBe(1)
-    expect(tx.hashesToSign[0].length).toBe(64)
+    console.log("Signed TX =", signedTx)
+
+    expect(typeof signedTx === "string").toBe(true)
+
+    // -------------------------------------------
+    // 8) Broadcast DCR Transaction
+    // -------------------------------------------
+    const { hash } = await dcr.broadcastTx(signedTx)
+
+    console.log("Broadcast TX Hash =", hash)
+    console.log(`Explorer: https://mempool.space/testnet4/tx/${hash}`)
+
+    expect(typeof hash === "string").toBe(true)
   })
 })

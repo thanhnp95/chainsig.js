@@ -1,7 +1,7 @@
 // Decred
 export { Decred } from './Decred'
 
-export { DCRRpcAdapter } from '@chain-adapters/Decred/DCRRpcAdapter/DCRRpcAdapter'
+export { DCRRpcAdapters, DCRRpcAdapter } from './DCRRpcAdapter'
 
 export type {
   DCRTransactionRequest,
@@ -12,4 +12,4 @@ export type {
   DCRNetworkIds,
 } from './types'
 
-export { Mempool } from '@chain-adapters/Decred/DCRRpcAdapter/Mempool/Mempool'
+export { Mempool } from './DCRRpcAdapter/Mempool'
