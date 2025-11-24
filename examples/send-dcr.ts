@@ -21,19 +21,21 @@ async function main(): Promise<void> {
   })
 
   const account = new Account(accountId, provider, signer)
+  const adapterApi = 'your-api-provider'
 
   const contract = new contracts.ChainSignatureContract({
     networkId: 'testnet',
     contractId:
       process.env.NEXT_PUBLIC_NEAR_CHAIN_SIGNATURE_CONTRACT ||
       'v1.signer-prod.testnet',
+     fallbackRpcUrls: ["https://test.rpc.fastnear.com"],
   })
 
   const derivationPath = "m/44'/42'/0'/0/0"
 
   const dcrRpcAdapter = new chainAdapters.dcr.DCRRpcAdapters.Mempool(
-    // TODO: add adapter api here
-    'decred mempool api'
+    // add adapter api here
+    adapterApi
   )
 
   const dcrChain = new chainAdapters.dcr.Decred({
@@ -63,7 +65,8 @@ async function main(): Promise<void> {
       to: 'TsoyZxpn16KJPXxhrgxsoL1yzQtp4wReq1T',
       value: BigInt(100_000).toString(),
     })
-
+  console.log("Unsigned TX =", transaction.unsignedTxHex)
+  
   // Sign with MPC
   const signature = await contract.sign({
     payloads: hashesToSign,
@@ -81,7 +84,8 @@ async function main(): Promise<void> {
   // Broadcast transaction
   const { hash: txHash } = await dcrChain.broadcastTx(signedTx)
 
-  // TODO: Print link to transaction on BTC Explorer
+  // Print link to transaction on Decred Explorer
+  console.log(`${adapterApi}/tx/${txHash}`)
 }
 
 main().catch(console.error)

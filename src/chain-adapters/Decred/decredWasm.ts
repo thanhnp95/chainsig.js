@@ -42,6 +42,7 @@ export interface DecredWasm {
   applySignatures(params: {
     unsignedTxHex: string
     signatures: string[]
+    pubKeyHex: string
   }): { signedTxHex: string }
 }
 
@@ -151,9 +152,6 @@ const decredWasm: DecredWasm = {
     return parsed
   },
 
-  // ==================================
-  // NEW API: getPkScript
-  // ==================================
   async getPkScript(params) {
     ensureReady()
 

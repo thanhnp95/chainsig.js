@@ -1,8 +1,21 @@
 export interface DCRTransaction {
+  txid: string
   vout: Array<{
-    scriptpubkey: string
     value: number
+    scriptPubKey: {
+      hex: string
+      asm: string
+      addresses?: string[]
+      type: string
+    }
   }>
+  blockhash: string | null
+  blockheight: number | null
+  confirmations: number
+  time: number
+  valueIn: number
+  valueOut: number
+  size: number
 }
 
 export interface DCRInput {

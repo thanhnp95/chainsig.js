@@ -197,16 +197,18 @@ export class Decred extends ChainAdapter<
 
     // Map outputs to format WASM (only support address/value)
     const wasmOutputs = outputs.map((out) => {
-      if ('address' in out) {
+      // Output has address → receiver
+      if ('address' in out && out.address) {
         return { address: out.address, value: out.value }
       }
 
+      // Not support raw script
       if ('script' in out) {
         throw new Error('Raw script outputs not yet supported for Decred')
       }
 
-      // out only has { value }
-      if (!('from' in transactionRequest) || !transactionRequest.from) {
+      // change output
+      if (!transactionRequest.from) {
         throw new Error(
           'Change output without "from" address is not supported for Decred'
         )
@@ -217,7 +219,7 @@ export class Decred extends ChainAdapter<
         value: out.value,
       }
     })
-
+    
     const unsigned = await wasm.buildUnsignedTx({
       inputs: wasmInputs,
       outputs: wasmOutputs,
@@ -253,13 +255,16 @@ export class Decred extends ChainAdapter<
 
     const wasm = this.getWasmSync()
 
-    const rawSigs = rsvSignatures.map(sig =>
-      (sig.r + sig.s).padStart(128, "0")
-    )
+    const rawSigs = rsvSignatures.map((sig) => {
+      const r = sig.r.replace(/^0x/i, "").padStart(64, "0")
+      const s = sig.s.replace(/^0x/i, "").padStart(64, "0")
+      return (r + s).toLowerCase() // 128 hex chars => 64 bytes
+    })
 
     const { signedTxHex } = wasm.applySignatures({
       unsignedTxHex: transaction.unsignedTxHex,
       signatures: rawSigs,
+      pubKeyHex: transaction.publicKey,
     })
 
     return signedTxHex
