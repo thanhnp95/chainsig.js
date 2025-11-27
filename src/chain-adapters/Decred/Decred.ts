@@ -11,7 +11,7 @@ import type { ChainSignatureContract } from '@contracts/ChainSignatureContract'
 import type { HashToSign, RSVSignature, UncompressedPubKeySEC1 } from '@types'
 import { cryptography } from '@utils'
 
-import { initDecredWasm, type DecredWasm } from './decredWasm'
+import { initDecredWasm, type DecredWasm } from 'decred-wasm'
 
 /**
  * Decred ChainAdapter implementation.
