@@ -1,10 +1,7 @@
 import { jest } from '@jest/globals'
 import { Mempool } from '../../src/chain-adapters/Decred/DCRRpcAdapter/Mempool'
 
-// ---------------------------------------------------------
-// FIX CHUẨN CHO MỌI MÔI TRƯỜNG Jest/Vitest
-// ---------------------------------------------------------
-const mockFetch = jest.fn() as any; // ← FIX DUY NHẤT
+const mockFetch = jest.fn() as any;
 
 global.fetch = mockFetch;
 
@@ -36,7 +33,7 @@ describe('Mempool DCRRpcAdapter', () => {
 
       mockFetch.mockImplementation((url: string) => {
         if (url.includes('/utils/estimatefee')) {
-          return createMockResponse({ "6": 0.00001 })  // ✔ CHUẨN FORMAT
+          return createMockResponse({ "6": 0.00001 })
         }
 
         if (url.includes('/utxo')) {
