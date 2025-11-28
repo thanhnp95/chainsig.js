@@ -7,6 +7,7 @@ import * as chainAdapters from '@chain-adapters'
 import type { BTCTransactionRequest } from '@chain-adapters/Bitcoin/types'
 import type { CosmosTransactionRequest } from '@chain-adapters/Cosmos/types'
 import type { EVMTransactionRequest } from '@chain-adapters/EVM/types'
+import type { DCRTransactionRequest } from '@chain-adapters/Decred/types'
 import { ChainSignatureContract } from '@contracts/ChainSignatureContract'
 import * as keypair from '@contracts/signAndSend/keypair'
 
@@ -41,15 +42,21 @@ describe('signAndSend keypair', () => {
     finalizeTransactionSigning: vi.fn(),
     broadcastTx: vi.fn(),
   }
+  const mockDCR = {
+    prepareTransactionForSigning: vi.fn(),
+    finalizeTransactionSigning: vi.fn(),
+    broadcastTx: vi.fn(),
+  }
 
   beforeEach(() => {
     vi.clearAllMocks()
-    ;(getNearAccount as any).mockResolvedValue(mockAccount)
-    ;(ChainSignatureContract as any).mockImplementation(() => mockContract)
-    ;(chainAdapters.evm.EVM as any).mockImplementation(() => mockEVM)
-    ;(chainAdapters.btc.Bitcoin as any).mockImplementation(() => mockBTC)
-    ;(chainAdapters.cosmos.Cosmos as any).mockImplementation(() => mockCosmos)
-    ;(createPublicClient as any).mockReturnValue({})
+      ; (getNearAccount as any).mockResolvedValue(mockAccount)
+      ; (ChainSignatureContract as any).mockImplementation(() => mockContract)
+      ; (chainAdapters.evm.EVM as any).mockImplementation(() => mockEVM)
+      ; (chainAdapters.btc.Bitcoin as any).mockImplementation(() => mockBTC)
+      ; (chainAdapters.cosmos.Cosmos as any).mockImplementation(() => mockCosmos)
+      ; (chainAdapters.dcr.Decred as any).mockImplementation(() => mockDCR)
+      ; (createPublicClient as any).mockReturnValue({})
   })
 
   describe('EVMTransaction', () => {
@@ -321,6 +328,96 @@ describe('signAndSend keypair', () => {
                 },
               },
             ],
+          },
+        },
+        mockKeyPair
+      )
+
+      // Verify
+      expect(result).toEqual({
+        success: false,
+        errorMessage: 'Test error',
+      })
+    })
+  })
+
+  describe('DCRTransaction', () => {
+    it('should successfully sign and send a Decred transaction', async () => {
+      // Setup
+      const mockTx: DCRTransactionRequest = {
+        publicKey: '03...',
+        from: 'Tsi...',
+        to: 'Tsi...',
+        value: '2.5',
+      }
+      const mockHashes = [
+        [1, 2, 3],
+        [4, 5, 6],
+      ]
+      const mockSignatures = [
+        { r: '1', s: '2', v: 27 },
+        { r: '3', s: '4', v: 28 },
+      ]
+      const mockTxHash = { hash: 'txid123' }
+
+      mockDCR.prepareTransactionForSigning.mockResolvedValue({
+        transaction: mockTx,
+        hashesToSign: mockHashes,
+      })
+      mockContract.sign.mockResolvedValue(mockSignatures)
+      mockDCR.finalizeTransactionSigning.mockReturnValue('signed_tx')
+      mockDCR.broadcastTx.mockResolvedValue(mockTxHash)
+
+      // Execute
+      const result = await keypair.DCRTransaction(
+        {
+          nearAuthentication: {
+            networkId: 'testnet',
+            accountId: 'test.near',
+          },
+          chainConfig: {
+            contract: 'test.contract',
+            providerUrl: 'http://test.com',
+            network: 'testnet',
+          },
+          derivationPath: "m/44'/42'/0'/0/0",
+          transaction: mockTx,
+        },
+        mockKeyPair
+      )
+
+      // Verify
+      expect(result).toEqual({
+        transactionHash: 'txid123',
+        success: true,
+      })
+      expect(mockContract.sign).toHaveBeenCalledTimes(2)
+    })
+
+    it('should handle errors in Decred transaction', async () => {
+      // Setup
+      mockDCR.prepareTransactionForSigning.mockRejectedValue(
+        new Error('Test error')
+      )
+
+      // Execute
+      const result = await keypair.DCRTransaction(
+        {
+          nearAuthentication: {
+            networkId: 'testnet',
+            accountId: 'test.near',
+          },
+          chainConfig: {
+            contract: 'test.contract',
+            providerUrl: 'http://test.com',
+            network: 'testnet',
+          },
+          derivationPath: "m/44'/42'/0'/0/0",
+          transaction: {
+            publicKey: '03...',
+            from: 'Tsi...',
+            to: 'Tsi...',
+            value: '1.75',
           },
         },
         mockKeyPair

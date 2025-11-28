@@ -193,6 +193,27 @@ export default defineConfig({
                 },
               ],
             },
+            {
+              text: 'Decred',
+              items: [
+                {
+                  text: 'Overview',
+                  link: '/chainsigjs/chain-adapters/decred',
+                },
+                {
+                  text: 'RPC Adapter',
+                  link: '/chainsigjs/chain-adapters/decred/dcr-rpc-adapter',
+                },
+                {
+                  text: 'prepareTransactionForSigning',
+                  link: '/chainsigjs/chain-adapters/decred/prepare-transaction-for-signing',
+                },
+                {
+                  text: 'finalizeTransactionSigning',
+                  link: '/chainsigjs/chain-adapters/decred/finalize-transaction-signing',
+                },
+              ],
+            },
           ],
         },
       ],

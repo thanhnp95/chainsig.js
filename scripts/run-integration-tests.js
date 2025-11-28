@@ -36,7 +36,7 @@ for (let i = 0; i < args.length; i++) {
     params.EVM_RPC_URL = args[++i];
   } else if (arg === '--type' && i + 1 < args.length) {
     testType = args[++i].toLowerCase();
-    if (!['solana', 'evm', 'bitcoin', 'cosmos', 'all'].includes(testType)) {
+    if (!['solana', 'evm', 'bitcoin', 'cosmos', 'decred', 'all'].includes(testType)) {
       console.error(`Unknown test type: ${testType}`);
       showHelp();
       process.exit(1);
@@ -122,7 +122,7 @@ function showHelp() {
   console.log('Usage: node scripts/run-integration-tests.js [options]');
   console.log('');
   console.log('Options:');
-  console.log('  --type TYPE                 Specify test type: solana, evm, bitcoin, cosmos, or all (default: solana)');
+  console.log('  --type TYPE                 Specify test type: solana, evm, bitcoin, cosmos, decred or all (default: solana)');
   console.log('  --near-account ACCOUNT_ID   Specify NEAR account ID (default: gregx.testnet)');
   console.log('  --near-key PRIVATE_KEY      Specify NEAR private key');
   console.log('  --mpc-contract CONTRACT_ID  Specify MPC contract ID (default: v1.signer-prod.testnet)');

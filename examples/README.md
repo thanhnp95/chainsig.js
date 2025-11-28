@@ -56,6 +56,12 @@ npm run send-xrp
 ```
 Demonstrates sending XRP using NEAR Chain Signatures on XRP Ledger testnet.
 
+### Decred Example
+```bash
+npm run send-dcr
+```
+Demonstrates sending DCR using NEAR Chain Signatures on Decred testnet.
+
 ## Important Notes
 
 - **Funding Required**: The derived addresses need to be funded with native tokens for gas fees

@@ -5,6 +5,7 @@ import { utils } from '../src'
 import { Bitcoin } from '../src/chain-adapters/Bitcoin/Bitcoin'
 import { Cosmos } from '../src/chain-adapters/Cosmos/Cosmos'
 import { EVM } from '../src/chain-adapters/EVM/EVM'
+import { Decred } from '../src/chain-adapters/Decred/Decred'
 
 // Mock modules that use elliptic
 jest.mock('../src/utils/cryptography', () => ({
@@ -58,5 +59,6 @@ describe('SDK exports', () => {
     expect(Bitcoin).toBeDefined()
     expect(EVM).toBeDefined()
     expect(Cosmos).toBeDefined()
+    expect(Decred).toBeDefined()
   })
 })

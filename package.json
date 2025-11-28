@@ -30,14 +30,15 @@
     "docs:watch": "typedoc --watch",
     "docs:clean": "rm -rf ./docs",
     "test": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest -c jest.config.ts \"__tests__/(bitcoin|solana|evm/basic.test.ts|xrp)\"",
-    "test:all": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest -c jest.config.ts __tests__/bitcoin __tests__/solana __tests__/evm/basic.test.ts __tests__/xrp",
-    "test:fixed": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest -c jest.config.ts __tests__/bitcoin __tests__/solana __tests__/evm/basic.test.ts __tests__/xrp",
+    "test:all": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest -c jest.config.ts __tests__/bitcoin __tests__/solana __tests__/decred __tests__/evm/basic.test.ts __tests__/xrp",
+    "test:fixed": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest -c jest.config.ts __tests__/bitcoin __tests__/solana __tests__/decred __tests__/evm/basic.test.ts __tests__/xrp",
     "test:passing": "npm run test:fixed",
     "test:bitcoin": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest -c jest.config.ts __tests__/bitcoin",
     "test:solana": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest -c jest.config.ts __tests__/solana",
     "test:cosmos": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest -c jest.config.ts __tests__/cosmos",
     "test:xrp": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest -c jest.config.ts __tests__/xrp",
     "test:evm": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest -c jest.config.ts __tests__/evm/basic.test.ts",
+    "test:decred": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest -c jest.config.ts __tests__/decred",
     "test:index": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest -c jest.config.ts __tests__/index.test.ts",
     "test:problematic": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest -c jest.config.ts \"__tests__/(cosmos|evm/EVM.test.ts|index)\"",
     "test:integration": "INTEGRATION_TEST=true NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest -c jest.config.ts __tests__/solana/Integration.test.ts __tests__/evm/Integration.test.ts --verbose",
@@ -52,6 +53,7 @@
     "test:integration:bitcoin": "INTEGRATION_TEST=true NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest -c jest.config.ts __tests__/bitcoin/Integration.test.ts --verbose",
     "test:integration:cosmos": "INTEGRATION_TEST=true NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest -c jest.config.ts __tests__/cosmos/Integration.test.ts --verbose",
     "test:integration:xrp": "INTEGRATION_TEST=true NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest -c jest.config.ts __tests__/xrp/Integration.test.ts --verbose",
+    "test:integration:decred": "INTEGRATION_TEST=true NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest -c jest.config.ts __tests__/decred/Integration.test.ts --verbose",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "pre:deploy": "npm run build",
@@ -63,8 +65,7 @@
     "test:utils": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings\" jest -c jest.config.ts __tests__/bitcoin/utils.test.ts",
     "docs:dev": "vocs dev",
     "docs:build": "vocs build",
-    "docs:preview": "vocs preview",
-    "test:decred": "vitest run sandbox/decred"
+    "docs:preview": "vocs preview"
   },
   "keywords": [
     "blockchain",
@@ -74,7 +75,8 @@
     "ethereum",
     "bitcoin",
     "cosmos",
-    "near"
+    "near",
+    "decred"
   ],
   "devDependencies": {
     "@aa-sdk/core": "^4.13.0",
